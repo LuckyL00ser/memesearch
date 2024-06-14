@@ -1,0 +1,67 @@
+version: '3'
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    image: memesearch-proxy:latest
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - memesearchNetwork
+    volumes:
+      - ${MEME_DIRECTORY}:/home/user/data:ro
+  
+  chromadb:
+    build:
+      context: backend/
+      dockerfile: Dockerfile
+    image: memesearch:latest
+    restart: always
+    volumes:
+      - ./db:/db
+    networks:
+      - memesearchNetwork
+    entrypoint: chroma run --path /db --host 0.0.0.0 --port 8000
+  
+  backend:
+    build:
+      context: backend/
+      dockerfile: Dockerfile
+    image: memesearch:latest
+    restart: always
+    depends_on:
+      - chromadb
+    environment:
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+    networks:
+      - memesearchNetwork
+
+  analyzer:
+    build:
+      context: backend/
+      dockerfile: Dockerfile
+    image: memesearch:latest
+    restart: always
+    depends_on:
+      - chromadb
+    volumes:
+      - ${MEME_DIRECTORY}:/memes:ro
+      - ./backend:/app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MEME_DIRECTORY=/memes
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+      - ANALYZE_EVERY_N_MINUTES=1
+    networks:
+      - memesearchNetwork
+    entrypoint: python3 job_scheduler.py
+
+networks:
+  memesearchNetwork:
+    driver: bridge

@@ -1,0 +1,62 @@
+# Node.js
+frontend/node_modules/
+.venv
+npm-debug.log
+yarn-error.log
+.env
+
+# React specific
+build/
+public/static/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+dist/
+build/
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtualenv
+venv/
+env/
+ENV/
+venv.bak/
+venv/
+env.bak/
+
+# Pytest
+.cache
+.tox
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media
+
+# Flask
+instance/
+.webassets-cache
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+#local ChromaDB
+db/
