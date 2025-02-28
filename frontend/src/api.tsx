@@ -16,7 +16,8 @@ interface CollectionStatusResponse {
 }
 
 // Define the base URL for your API
-const BASE_URL = process.env.NODE_ENV === "production" ? "/api" : "http://localhost:80/api";
+const BASE_API_URL = process.env.NODE_ENV === "production" ? "/api" : "http://localhost:80/api";
+const BASE_DATA_URL = process.env.NODE_ENV === "production" ? "/data" : "http://localhost:80/data";
 
 // Function to get paginated memes
 const getMemes = async (
@@ -26,7 +27,7 @@ const getMemes = async (
 ): Promise<PaginatedMemeResponse> => {
   try {
     const response = await axios.get<PaginatedMemeResponse>(
-      `${BASE_URL}/memes`,
+      `${BASE_API_URL}/memes`,
       {
         params: {
           query,
@@ -46,7 +47,7 @@ const getMemes = async (
 const getStatus = async (): Promise<CollectionStatusResponse> => {
   try {
     const response = await axios.get<CollectionStatusResponse>(
-      `${BASE_URL}/memes/collection-status`
+      `${BASE_API_URL}/memes/collection-status`
     );
     return response.data;
   } catch (error) {
@@ -72,3 +73,4 @@ export const getStatusQuery = (refetchInterval:number) => {
     refetchInterval: refetchInterval
   });
 }
+export { BASE_API_URL, BASE_DATA_URL };

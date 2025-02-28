@@ -1,9 +1,9 @@
 from typing import List, Tuple
 from openai import OpenAI
-import os
 import base64
 
-from globals import OPENAI_API_KEY, get_os_meme_path
+from globals import OPENAI_API_KEY
+from utils.utils import get_os_meme_path
 
 
 class Analyzer:

@@ -2,8 +2,8 @@ import time
 import schedule
 
 from globals import ANALYZE_EVERY_N_MINUTES
-from scan_analyze import analyze_memes
-from logger import logger
+from analyzer.scan_analyze import analyze_memes
+from analyzer.logger import logger
 
 schedule.every(ANALYZE_EVERY_N_MINUTES).minutes.do(analyze_memes) 
 

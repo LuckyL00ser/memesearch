@@ -15,17 +15,49 @@ services:
     volumes:
       - ${MEME_DIRECTORY}:/home/user/data:ro
   
-  chromadb:
-    build:
-      context: backend/
-      dockerfile: Dockerfile
-    image: memesearch:latest
-    restart: always
-    volumes:
-      - ./db:/db
+  # chromadb:
+  #   build:
+  #     context: backend/
+  #     dockerfile: Dockerfile
+  #   image: memesearch:latest
+  #   restart: always
+  #   volumes:
+  #     - ./db:/db
+  #   networks:
+  #     - memesearchNetwork
+  #   ports:
+  #     - "8000:8000"
+  #   entrypoint: chroma run --path /db --host 0.0.0.0 --port 8000
+
+  t2v-transformers:  #inference container
+    image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+    environment:
+      ENABLE_CUDA: 0
     networks:
       - memesearchNetwork
-    entrypoint: chroma run --path /db --host 0.0.0.0 --port 8000
+
+  weaviate:
+    command: ["--host", "0.0.0.0", "--port", "8080", "--scheme", "http"]
+    image: cr.weaviate.io/semitechnologies/weaviate:1.28.4
+    depends_on:
+      - t2v-transformers
+    ports:
+    - 8080:8080
+    - 50051:50051
+    volumes:
+    - ./backend/db/:/var/lib/weaviate
+    restart: on-failure:0
+    networks:
+      - memesearchNetwork
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      ENABLE_API_BASED_MODULES: 'true'
+      CLUSTER_HOSTNAME: 'node1'
+      ENABLE_MODULES: text2vec-transformers # Enable this module
+      TRANSFORMERS_INFERENCE_API: http://t2v-transformers:8080
+
   
   backend:
     build:
@@ -33,13 +65,18 @@ services:
       dockerfile: Dockerfile
     image: memesearch:latest
     restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
     depends_on:
-      - chromadb
-    environment:
-      - CHROMADB_HOST=chromadb
-      - CHROMADB_PORT=8000
+      - weaviate
+    # environment:
+      # - CHROMADB_HOST=chromadb
+      # - CHROMADB_PORT=8000
     networks:
       - memesearchNetwork
+    entrypoint: ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "80"]
 
   analyzer:
     build:
@@ -48,19 +85,17 @@ services:
     image: memesearch:latest
     restart: always
     depends_on:
-      - chromadb
+      - weaviate
     volumes:
       - ${MEME_DIRECTORY}:/memes:ro
       - ./backend:/app
+    env_file:
+      - .env
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MEME_DIRECTORY=/memes
-      - CHROMADB_HOST=chromadb
-      - CHROMADB_PORT=8000
       - ANALYZE_EVERY_N_MINUTES=1
     networks:
       - memesearchNetwork
-    entrypoint: python3 job_scheduler.py
+    entrypoint: python3 analyzer/scan_analyze.py
 
 networks:
   memesearchNetwork:

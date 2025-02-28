@@ -11,6 +11,7 @@ import {
 import { PageProvider } from "./providers/PageContext";
 import { MemesProvider } from "./providers/MemesContext";
 import ProgressBar from "./components/ProgressBar";
+import { MemeGallery } from "./components/MemeGallery";
 
 const queryClient = new QueryClient()
 
@@ -27,7 +28,7 @@ function App() {
                 <ProgressBar/>
                 <Searchbar />
               </div>
-              <ImageGrid />
+              <MemeGallery />
             </main>
             <Footer />
           </div>

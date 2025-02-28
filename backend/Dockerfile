@@ -9,6 +9,6 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 ENV PYTHONPATH=/app
-RUN python trigger_file_download.py
+RUN python utils/trigger_file_download.py
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "80"]

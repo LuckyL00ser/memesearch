@@ -12,9 +12,11 @@ class VectorDB:
         chromadb_host: Optional[str] = CHROMADB_HOST,
         chromadb_port: Optional[int] = CHROMADB_PORT,
         collection_name: str = "memes",
-    ):  
+    ):
         try:
-            self.chroma_client = chromadb.HttpClient(host=chromadb_host, port=chromadb_port)
+            self.chroma_client = chromadb.HttpClient(
+                host=chromadb_host, port=chromadb_port
+            )
         except Exception:
             self.chroma_client = chromadb.PersistentClient(path=db_path)
         self.collection_name = collection_name
@@ -30,13 +32,11 @@ class VectorDB:
         analyzed: bool = False,
     ):
         return {
-            **{
-                "keywords": str(keywords),  # tbd
-                "file_created_at": file_created_at,
-                "meme_analyzed_at": (
-                    datetime.now().strftime("%Y-%m-%d %H:%M:%S") if analyzed else ""
-                ),
-            },
+            "keywords": str(keywords),
+            "file_created_at": file_created_at,
+            "meme_analyzed_at": (
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S") if analyzed else ""
+            ),
             **exif_tags,
         }
 
@@ -81,6 +81,7 @@ class VectorDB:
         query_result = self.collection.query(
             query_texts=[query_text],
             n_results=n_results,
+            where={"meme_analyzed_at": {"$ne": ""}},
             # where={"metadata_field": "is_equal_to_this"},
             # where_document={"$contains":"search_string"}
             include=["metadatas", "documents"],
@@ -104,3 +105,4 @@ if __name__ == "__main__":
     db = VectorDB()
     print(f"Memes in db: {db.get_total_memes_count()}")
     print(f"Unanalyzed memes in db: {len(db.get_unanalyzed_memes())}")
+

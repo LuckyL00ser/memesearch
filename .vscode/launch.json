@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            // "module": "${file}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "WEAVIATE_HOST": "localhost",
+                "WEAVIATE_PORT": "8080",
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+        }
+    ]
+}

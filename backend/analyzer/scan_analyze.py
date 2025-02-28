@@ -4,14 +4,20 @@ from typing import List
 import logging
 
 from tqdm import tqdm
-from analyzer import Analyzer
+from analyzer.analyzer_class import Analyzer
 from globals import ALLOWED_IMAGE_EXTENSIONS, MEME_DIRECTORY
 
-from utils import get_exif_data, get_file_dates
-from vector_db import VectorDB
+from utils.utils import get_exif_data, get_file_dates
+from server.vector_db_weaviate import MemeDTO, VectorDBWeaviate
+
+class ScanLoggerAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        return f"[SCAN] {msg}", kwargs
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+logger = ScanLoggerAdapter(logger, {})
+
 
 def init_dir_search(directory: str, existing_memes: List[str]):
     """
@@ -43,7 +49,7 @@ def init_dir_search(directory: str, existing_memes: List[str]):
         f"""
 ***MEME SCAN RESULT***
 Total found - {total}
-Not matching - {len(found_not_matching)} ({prcnt}%)
+Not matching files - {len(found_not_matching)} ({prcnt}%)
 """
     )
 
@@ -55,56 +61,49 @@ Not matching - {len(found_not_matching)} ({prcnt}%)
     return new_memes
 
 
-def add_new_memes_to_db(new_memes: List[str], db: VectorDB):
-    analyzed_list = [False] * len(new_memes)
-    keywords = [""] * len(new_memes)
-    descriptions = [""] * len(new_memes)
-    files_created_at = []
-    exif_tags_list = []
+def add_new_memes_to_db(new_memes: List[str], db: VectorDBWeaviate):
+    memes = []
 
     for meme in tqdm(new_memes, "populating db with new memes"):
         created_at, _ = get_file_dates(meme)
-        exif_dict = get_exif_data(meme)
-        files_created_at.append(created_at)
-        exif_tags_list.append(exif_dict)
+        memes.append(
+            MemeDTO(
+                img_path=meme, description="", keywords=[], file_created_at=created_at
+            )
+        )
 
-    db.add_memes(
-        new_memes,
-        descriptions,
-        keywords,
-        files_created_at,
-        exif_tags_list,
-        analyzed_list,
-    )
+    db.add_memes(memes)
 
 
-def analyze_update_meme(img_path: str, db: VectorDB, analyzer: Analyzer):
+def analyze_update_meme(img_path: str, db: VectorDBWeaviate, analyzer: Analyzer):
     try:
         description, keywords = analyzer.analyze_image(img_path)
         created_at, _ = get_file_dates(img_path)
-        exif_dict = get_exif_data(img_path)
-        db.add_meme(
-            img_path, description, keywords, created_at, exif_dict, analyzed=True
-        )
+        # exif_dict = get_exif_data(img_path)
+        db.update_meme(img_path, description, keywords)
+
     except Exception as exc:
         logger.error(f"Meme {img_path} hasn't been added due to {exc}.")
 
 
-def bulk_analysis(img_paths: List[str], db: VectorDB):
+def bulk_analysis(img_paths: List[str], db: VectorDBWeaviate):
     analyzer = Analyzer()
-    for img_path in tqdm(img_paths,"Analysis progress"):
+    for img_path in tqdm(img_paths, "Analysis progress"):
         analyze_update_meme(img_path, db, analyzer=analyzer)
 
 
 def analyze_memes():
     logger.info("***ANALYSIS STARTS***")
     directory = MEME_DIRECTORY
-    db = VectorDB()
-    memes = init_dir_search(directory, existing_memes=db.get_all_memes()["ids"])
-    if(len(memes)> 0):
+    db = VectorDBWeaviate()
+    memes = init_dir_search(
+        directory, existing_memes=list(map(lambda x: x.img_path, db.get_all_memes()))
+    )
+    
+    if len(memes) > 0:
         add_new_memes_to_db(memes, db)
 
-    to_be_analyzed = db.get_unanalyzed_memes()
+    to_be_analyzed = list(map(lambda x: x.img_path, db.get_unanalyzed_memes()))
     bulk_analysis(to_be_analyzed, db)
 
 

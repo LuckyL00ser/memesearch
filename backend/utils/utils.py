@@ -1,10 +1,12 @@
 from datetime import datetime
 import os
-import time
 from PIL import Image
 from PIL.ExifTags import TAGS
 
-from globals import get_os_meme_path
+from globals import MEME_DIRECTORY
+
+def get_os_meme_path(img_path: str) -> str:
+    return f"{MEME_DIRECTORY}/{img_path.strip('/')}"
 
 # Function to get EXIF data
 def get_exif_data(image_path:str):
@@ -31,7 +33,7 @@ def get_file_dates(image_path:str):
     creation_date = file_stats.st_ctime  # Creation date
     modification_date = file_stats.st_mtime  # Modification date
 
-    creation_date_readable = datetime.fromtimestamp(creation_date).strftime('%Y-%m-%d %H:%M:%S', )
-    modification_date_readable = datetime.fromtimestamp(modification_date).strftime('%Y-%m-%d %H:%M:%S')
+    creation_date_readable = datetime.fromtimestamp(creation_date)
+    modification_date_readable = datetime.fromtimestamp(modification_date)
     
     return creation_date_readable, modification_date_readable
